@@ -9,6 +9,7 @@ import 'package:webinar/app/models/single_course_model.dart';
 import 'package:webinar/app/pages/authentication_page/login_page.dart';
 import 'package:webinar/app/pages/main_page/home_page/single_course_page/learning_page.dart';
 import 'package:webinar/app/providers/user_provider.dart';
+import 'package:webinar/app/services/analytics_service.dart';
 import 'package:webinar/app/services/guest_service/course_service.dart';
 import 'package:webinar/app/services/user_service/cart_service.dart';
 import 'package:webinar/app/services/user_service/purchase_service.dart';
@@ -180,6 +181,16 @@ class _SingleCoursePageState extends State<SingleCoursePage> with SingleTickerPr
 
     courseData = await CourseService.getSingleCourseData(id, isBundleCourse, isPrivate: isPrivate);
     
+    if (courseData != null) {
+      // Event: view_item — course detail screen opened
+      AnalyticsService.instance.logViewItem(
+        itemId: courseData!.id.toString(),
+        itemName: courseData!.title ?? '',
+        category: isBundleCourse ? 'bundle' : 'course',
+        price: (courseData!.price ?? courseData!.bestTicketPrice ?? 0).toDouble(),
+      );
+    }
+
     if(courseData != null && isBundleCourse){
       getBundleCourses();
     }

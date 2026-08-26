@@ -5,6 +5,7 @@ import 'package:webinar/app/pages/authentication_page/login_page.dart';
 import 'package:webinar/app/pages/authentication_page/verify_code_page.dart';
 import 'package:webinar/app/pages/main_page/home_page/single_course_page/single_content_page/web_view_page.dart';
 import 'package:webinar/app/pages/main_page/main_page.dart';
+import 'package:webinar/app/services/analytics_service.dart';
 import 'package:webinar/app/services/authentication_service/authentication_service.dart';
 import 'package:webinar/app/services/guest_service/guest_service.dart';
 import 'package:webinar/app/widgets/authentication_widget/auth_widget.dart';
@@ -430,6 +431,10 @@ class _RegisterPageState extends State<RegisterPage> {
                                   
                                   if(res != null){
                                     if(registerConfig?.disableRegistrationVerification ?? false){
+                                      // Event: sign_up — registration complete without verification
+                                      AnalyticsService.instance.logSignUp(
+                                        method: otherRegisterMethod == 'email' ? 'email' : 'mobile',
+                                      );
                                       locator<PageProvider>().setPage(PageNames.home);
                                       nextRoute(MainPage.pageName, arguments: res['user_id']);
                                     }else{
@@ -443,6 +448,10 @@ class _RegisterPageState extends State<RegisterPage> {
                                         });
         
                                       }else if(res['step'] == 'go_step_3'){
+                                        // Event: sign_up — registration complete (step 3)
+                                        AnalyticsService.instance.logSignUp(
+                                          method: otherRegisterMethod == 'email' ? 'email' : 'mobile',
+                                        );
                                         AppData.canShowFinalizeSheet = true;
                                         locator<PageProvider>().setPage(PageNames.home);
                                         nextRoute(MainPage.pageName, arguments: res['user_id']);
@@ -466,6 +475,10 @@ class _RegisterPageState extends State<RegisterPage> {
                                   
                                   if(res != null){
                                     if(registerConfig?.disableRegistrationVerification ?? false){
+                                      // Event: sign_up — registration complete without verification
+                                      AnalyticsService.instance.logSignUp(
+                                        method: otherRegisterMethod == 'email' ? 'email' : 'mobile',
+                                      );
                                       locator<PageProvider>().setPage(PageNames.home);
                                       nextRoute(MainPage.pageName, arguments: res['user_id']);
                                     }else{
@@ -480,6 +493,10 @@ class _RegisterPageState extends State<RegisterPage> {
                                         });
         
                                       }else if(res['step'] == 'go_step_3'){
+                                        // Event: sign_up — registration complete (step 3)
+                                        AnalyticsService.instance.logSignUp(
+                                          method: otherRegisterMethod == 'email' ? 'email' : 'mobile',
+                                        );
                                         AppData.canShowFinalizeSheet = true;
                                         locator<PageProvider>().setPage(PageNames.home);
                                         nextRoute(MainPage.pageName, arguments: res['user_id']);

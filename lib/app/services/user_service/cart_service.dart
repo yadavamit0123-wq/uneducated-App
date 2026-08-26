@@ -4,7 +4,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart';
 import 'package:webinar/app/models/cart_model.dart';
 import 'package:webinar/app/models/checkout_model.dart';
+import 'package:webinar/app/models/cart_model.dart';
 import 'package:webinar/app/providers/user_provider.dart';
+import 'package:webinar/app/services/analytics_service.dart';
 import 'package:webinar/common/components.dart';
 import 'package:webinar/common/utils/app_text.dart';
 import 'package:webinar/common/utils/error_handler.dart';
@@ -102,7 +104,13 @@ class CartService{
   }
     
   
-  static Future<bool> store(int courseId,int ticketId)async{
+  static Future<bool> store(
+    int courseId,
+    int ticketId, {
+    String? itemName,
+    double? price,
+    String category = 'course',
+  })async{
     try{
       String url = '${Constants.baseUrl}panel/cart/store';
 
@@ -121,6 +129,15 @@ class CartService{
       if(jsonResponse['success']){
         getCart();
         showSnackBar(ErrorEnum.success, appText.successAddToCartDesc);
+
+        // Event: add_to_cart — course ticket added via CartService.store
+        AnalyticsService.instance.logAddToCart(
+          itemId: courseId.toString(),
+          itemName: itemName ?? courseId.toString(),
+          category: category,
+          price: price ?? 0,
+        );
+
         return true;
       }else{
         ErrorHandler().showError(ErrorEnum.error, jsonResponse, readMessage: true);
@@ -243,8 +260,28 @@ class CartService{
       var jsonResponse = parseCleanJson(res.body.toString());
       
       if(jsonResponse['success']){
-        getCart();
+        await getCart();
         showSnackBar(ErrorEnum.success, appText.successAddToCartDesc);
+
+        final cart = locator<UserProvider>().cartData;
+        Items? matchedItem;
+        if (cart?.items != null) {
+          for (final item in cart!.items!) {
+            if (item.id?.toString() == itemId || item.title == itemName) {
+              matchedItem = item;
+              break;
+            }
+          }
+        }
+
+        // Event: add_to_cart — course/product added via CartService.add
+        AnalyticsService.instance.logAddToCart(
+          itemId: itemId,
+          itemName: itemName,
+          category: specifications?.isNotEmpty == true ? specifications! : 'course',
+          price: (matchedItem?.price ?? 0).toDouble(),
+        );
+
         return true;
       }else{
         ErrorHandler().showError(ErrorEnum.error, jsonResponse, readMessage: true);

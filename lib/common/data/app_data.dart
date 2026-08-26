@@ -69,6 +69,18 @@ class AppData {
 
 
 
+  static Future saveAnalyticsConsent(bool data) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return await prefs.setBool('analytics_consent', data);
+  }
+
+  static Future<bool?> getAnalyticsConsent() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (!prefs.containsKey('analytics_consent')) return null;
+    return prefs.getBool('analytics_consent');
+  }
+
+
   // static String appName = 'Webinar';
   static bool canShowFinalizeSheet = true;
 }

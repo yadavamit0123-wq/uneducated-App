@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart';
 import 'package:webinar/app/models/currency_model.dart';
 import 'package:webinar/app/models/register_config_model.dart';
+import 'package:webinar/app/models/tracking_analytics_config.dart';
 import 'package:webinar/common/data/api_public_data.dart';
 
 import '../../../common/utils/constants.dart';
@@ -78,6 +79,15 @@ class GuestService{
       if(res.statusCode == 200){
         
         PublicData.apiConfigData = jsonResponse['data'];
+
+        final trackingData = jsonResponse['data']?['tracking_analytics'];
+        if (trackingData != null && trackingData is Map<String, dynamic>) {
+          PublicData.trackingAnalyticsConfig =
+              TrackingAnalyticsConfig.fromJson(trackingData);
+        } else {
+          PublicData.trackingAnalyticsConfig = null;
+        }
+
         return jsonResponse['data'];
       }else{
 

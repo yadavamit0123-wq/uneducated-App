@@ -1,4 +1,7 @@
+import 'dart:async';
 import 'dart:io';
+
+import 'package:app_links/app_links.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +21,7 @@ import 'package:webinar/common/common.dart';
 import 'package:webinar/common/data/app_data.dart';
 import 'package:webinar/common/data/app_language.dart';
 import 'package:webinar/common/database/app_database.dart';
+import 'package:webinar/common/utils/payment_deep_link.dart';
 import 'package:webinar/common/utils/app_text.dart';
 import 'package:webinar/config/colors.dart';
 import 'package:webinar/config/theme/light_colors.dart';
@@ -41,6 +45,8 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
 
   double bottomNavHeight = 110;
+  StreamSubscription<Uri>? _paymentDeepLinkSub;
+  final _appLinks = AppLinks();
   
   @override
   void initState() {
@@ -55,6 +61,7 @@ class _MainPageState extends State<MainPage> {
       AppDataBase.getCoursesAndSaveInDB();
       
       addListener();
+      _initPaymentDeepLinks();
 
       FirebaseMessaging.instance.getToken().then((value) {
         try{
@@ -64,6 +71,17 @@ class _MainPageState extends State<MainPage> {
     });
 
     getData();
+  }
+
+  Future<void> _initPaymentDeepLinks() async {
+    final initialUri = await _appLinks.getInitialLink();
+    if (initialUri != null) {
+      handlePaymentDeepLink(initialUri);
+    }
+
+    _paymentDeepLinkSub = _appLinks.uriLinkStream.listen((uri) {
+      handlePaymentDeepLink(uri);
+    }, onError: (_) {});
   }
 
 
@@ -84,6 +102,7 @@ class _MainPageState extends State<MainPage> {
 
   @override
   void dispose() {
+    _paymentDeepLinkSub?.cancel();
     drawerController.dispose();
     super.dispose();
   }

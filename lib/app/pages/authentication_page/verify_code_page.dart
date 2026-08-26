@@ -4,6 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:webinar/app/services/analytics_service.dart';
 import 'package:webinar/app/services/authentication_service/authentication_service.dart';
 import 'package:webinar/app/widgets/authentication_widget/register_widget/register_widget.dart';
 import 'package:webinar/common/common.dart';
@@ -252,6 +253,13 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
                               bool res = await AuthenticationService.verifyCode(data['user_id'], code);
                     
                               if(res){
+                                // Event: sign_up — account verification complete
+                                AnalyticsService.instance.logSignUp(
+                                  method: PublicData.apiConfigData?['register_method'] == 'email'
+                                      ? 'email'
+                                      : 'mobile',
+                                );
+
                                 if(Platform.isAndroid){
                                   await FirebaseMessaging.instance.deleteToken();
                                 }

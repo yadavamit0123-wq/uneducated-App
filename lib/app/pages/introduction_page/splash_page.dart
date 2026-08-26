@@ -8,8 +8,10 @@ import 'package:loading_indicator/loading_indicator.dart';
 import 'package:webinar/app/pages/introduction_page/intro_page.dart';
 import 'package:webinar/app/pages/main_page/main_page.dart';
 import 'package:webinar/app/pages/offline_page/internet_connection_page.dart';
+import 'package:webinar/app/services/analytics_service.dart';
 import 'package:webinar/app/services/guest_service/guest_service.dart';
 import 'package:webinar/common/common.dart';
+import 'package:webinar/common/data/api_public_data.dart';
 import 'package:webinar/common/data/app_data.dart';
 import 'package:webinar/common/utils/app_text.dart';
 import 'package:webinar/config/assets.dart';
@@ -37,38 +39,79 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
     FlutterNativeSplash.remove();
 
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      
       animationController.forward();
-      
-      Timer(const Duration(seconds: 3), () async {
-
-        final List<ConnectivityResult> connectivityResult = await (Connectivity().checkConnectivity());
-        
-        if(connectivityResult.contains(ConnectivityResult.none)){
-          nextRoute(InternetConnectionPage.pageName, isClearBackRoutes: true);
-        }else{
-          String token = await AppData.getAccessToken();
-
-          if(mounted){
-            if(token.isEmpty){
-              bool isFirst = await AppData.getIsFirst(); 
-
-              if(isFirst){
-                nextRoute(IntroPage.pageName, isClearBackRoutes: true);
-              }else{
-                nextRoute(MainPage.pageName, isClearBackRoutes: true);
-              }
-            }else{
-              nextRoute(MainPage.pageName, isClearBackRoutes: true);
-            }
-          }
-        }
-        
-
-      });
+      _bootstrap();
     });
+  }
 
-    GuestService.config();
+  Future<void> _bootstrap() async {
+    await GuestService.config();
+    await AnalyticsService.instance.init(PublicData.trackingAnalyticsConfig);
+
+    if (!mounted) return;
+
+    if (AnalyticsService.instance.needsConsentPrompt) {
+      await _showConsentDialog();
+    }
+
+    await Future.delayed(const Duration(seconds: 3));
+
+    if (!mounted) return;
+
+    final List<ConnectivityResult> connectivityResult =
+        await Connectivity().checkConnectivity();
+
+    if (connectivityResult.contains(ConnectivityResult.none)) {
+      nextRoute(InternetConnectionPage.pageName, isClearBackRoutes: true);
+      return;
+    }
+
+    final token = await AppData.getAccessToken();
+
+    if (!mounted) return;
+
+    if (token.isEmpty) {
+      final isFirst = await AppData.getIsFirst();
+
+      if (isFirst) {
+        nextRoute(IntroPage.pageName, isClearBackRoutes: true);
+      } else {
+        nextRoute(MainPage.pageName, isClearBackRoutes: true);
+      }
+    } else {
+      nextRoute(MainPage.pageName, isClearBackRoutes: true);
+    }
+  }
+
+  Future<void> _showConsentDialog() async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(appText.setting),
+          content: const Text(
+            'We use analytics cookies to improve your experience. Do you accept marketing and analytics tracking?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                await AnalyticsService.instance.setConsent(false);
+                if (context.mounted) Navigator.pop(context);
+              },
+              child: const Text('Reject'),
+            ),
+            TextButton(
+              onPressed: () async {
+                await AnalyticsService.instance.setConsent(true);
+                if (context.mounted) Navigator.pop(context);
+              },
+              child: const Text('Accept'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
 

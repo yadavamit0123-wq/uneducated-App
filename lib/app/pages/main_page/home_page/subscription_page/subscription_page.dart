@@ -1,9 +1,5 @@
-import 'dart:async';
-
-import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:webinar/app/models/saas_package_model.dart';
-import 'package:webinar/app/pages/main_page/home_page/payment_status_page/payment_status_page.dart';
 import 'package:webinar/app/pages/main_page/home_page/single_course_page/single_content_page/web_view_page.dart';
 import 'package:webinar/app/providers/user_provider.dart';
 import 'package:webinar/app/services/user_service/subscription_service.dart';
@@ -11,7 +7,6 @@ import 'package:webinar/app/widgets/main_widget/subscription_widget/subscription
 import 'package:webinar/common/common.dart';
 import 'package:webinar/common/components.dart';
 import 'package:webinar/common/utils/app_text.dart';
-import 'package:webinar/common/utils/constants.dart';
 import 'package:webinar/locator.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
@@ -42,9 +37,6 @@ class _SubscriptionPageState extends State<SubscriptionPage> with SingleTickerPr
   bool isLoadingSubscription = false;
   bool isLoadingSaasPackage = false;
 
-  late StreamSubscription _sub;
-  final appLinks = AppLinks();
-
   @override
   void initState() {
     super.initState();
@@ -56,8 +48,6 @@ class _SubscriptionPageState extends State<SubscriptionPage> with SingleTickerPr
     }
     
     getData();
-    initUniLinks();
-
   }
 
   getData() async {
@@ -77,26 +67,11 @@ class _SubscriptionPageState extends State<SubscriptionPage> with SingleTickerPr
     
   }
 
-  Future<void> initUniLinks() async {
-
-    _sub = appLinks.uriLinkStream.listen((uri) {
-      // if(uri.path != null){
-        
-      if(uri.path == '${Constants.scheme}://payment-success'){
-        getData();
-        nextRoute(PaymentStatusPage.pageName, arguments: 'success');
-      }else if(uri.path == '${Constants.scheme}://payment-failed'){
-        nextRoute(PaymentStatusPage.pageName, arguments: 'failed');
-      }
-
-      // }
-    }, onError: (err) {});
-    
-  }
-
   @override
   void dispose() {
-    _sub.cancel();
+    tabController.dispose();
+    pageController.dispose();
+    saasPageController.dispose();
     super.dispose();
   }
 

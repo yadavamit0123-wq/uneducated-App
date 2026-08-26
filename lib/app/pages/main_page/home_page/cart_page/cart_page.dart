@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:webinar/app/models/course_model.dart';
 import 'package:webinar/app/pages/main_page/home_page/single_course_page/single_content_page/web_view_page.dart';
 import 'package:webinar/app/providers/user_provider.dart';
+import 'package:webinar/app/services/analytics_service.dart';
 import 'package:webinar/app/services/user_service/cart_service.dart';
 import 'package:webinar/app/widgets/main_widget/home_widget/cart_widget.dart';
 import 'package:webinar/common/common.dart';
@@ -280,6 +281,12 @@ class _CartPageState extends State<CartPage> {
                                     });
 
                                     String? link = await CartService.webCheckout();
+
+                                    // Event: begin_checkout — web checkout opened from cart
+                                    AnalyticsService.instance.logBeginCheckout(
+                                      value: (userProvdider.cartData?.amounts?.total ?? 0).toDouble(),
+                                      items: AnalyticsService.itemsFromCart(userProvdider.cartData),
+                                    );
 
                                     bool? res = await nextRoute(
                                       WebViewPage.pageName, 

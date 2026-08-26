@@ -1,12 +1,8 @@
-import 'dart:async';
-
-import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:webinar/app/models/offline_payment_model.dart';
 import 'package:webinar/app/models/payout_model.dart';
 import 'package:webinar/app/models/sales_model.dart';
 import 'package:webinar/app/models/summary_model.dart';
-import 'package:webinar/app/pages/main_page/home_page/payment_status_page/payment_status_page.dart';
 import 'package:webinar/app/pages/main_page/home_page/single_course_page/single_content_page/web_view_page.dart';
 import 'package:webinar/app/providers/user_provider.dart';
 import 'package:webinar/app/services/user_service/financial_service.dart';
@@ -15,7 +11,6 @@ import 'package:webinar/common/common.dart';
 import 'package:webinar/common/components.dart';
 import 'package:webinar/common/data/api_public_data.dart';
 import 'package:webinar/common/utils/app_text.dart';
-import 'package:webinar/common/utils/constants.dart';
 import 'package:webinar/locator.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
@@ -42,9 +37,6 @@ class _FinancialPageState extends State<FinancialPage>  with SingleTickerProvide
  
   bool isLoadingCharge = false;
 
-  late StreamSubscription _sub;
-  final appLinks = AppLinks();
-
   @override
   void initState() {
     super.initState();
@@ -62,30 +54,11 @@ class _FinancialPageState extends State<FinancialPage>  with SingleTickerProvide
       getSalesData();
     }
     getPayoutData();
-
-    initUniLinks();
   } 
-
-  Future<void> initUniLinks() async {
-    
-    _sub = appLinks.uriLinkStream.listen((uri) {
-      // if(link != null){
-        
-        if(uri.path == '${Constants.scheme}://payment-success'){
-          getSummaryData();
-          nextRoute(PaymentStatusPage.pageName, arguments: 'success');
-        }else if(uri.path == '${Constants.scheme}://payment-failed'){
-          nextRoute(PaymentStatusPage.pageName, arguments: 'failed');
-        }
-
-      // }
-    }, onError: (err) {});
-    
-  }
 
   @override
   void dispose() {
-    _sub.cancel();
+    tabController.dispose();
     super.dispose();
   }
 

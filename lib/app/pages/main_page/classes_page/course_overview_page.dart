@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:webinar/app/models/single_course_model.dart';
+import 'package:webinar/app/services/analytics_service.dart';
 import 'package:webinar/app/services/guest_service/course_service.dart';
 import 'package:webinar/common/common.dart';
 import 'package:webinar/common/components.dart';
@@ -55,6 +56,16 @@ class _CourseOverviewPageState extends State<CourseOverviewPage> {
     });
     
     course = await CourseService.getOverviewCourseData(id, isBundle, isPrivate: isPrivate);
+    
+    if (course != null) {
+      // Event: view_item — course overview screen opened
+      AnalyticsService.instance.logViewItem(
+        itemId: course!.id.toString(),
+        itemName: course!.title ?? '',
+        category: isBundle ? 'bundle' : 'course',
+        price: (course!.price ?? course!.bestTicketPrice ?? 0).toDouble(),
+      );
+    }
     
     setState(() {
       isLoading  = false;

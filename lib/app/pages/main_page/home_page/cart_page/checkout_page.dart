@@ -4,6 +4,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:persian_number_utility/persian_number_utility.dart';
 import 'package:webinar/app/models/checkout_model.dart';
 import 'package:webinar/app/pages/main_page/main_page.dart';
+import 'package:webinar/app/providers/user_provider.dart';
+import 'package:webinar/app/services/analytics_service.dart';
 import 'package:webinar/app/services/user_service/cart_service.dart';
 import 'package:webinar/app/widgets/main_widget/home_widget/cart_widget.dart';
 import 'package:webinar/common/common.dart';
@@ -15,6 +17,7 @@ import 'package:webinar/common/utils/currency_utils.dart';
 import 'package:webinar/config/assets.dart';
 import 'package:webinar/config/colors.dart';
 import 'package:webinar/config/styles.dart';
+import 'package:webinar/locator.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../single_course_page/single_content_page/web_view_page.dart';
@@ -60,6 +63,15 @@ class _CheckoutPageState extends State<CheckoutPage> {
     });
 
     checkoutData = await CartService.checkout();
+
+    if (checkoutData != null) {
+      // Event: begin_checkout — checkout/payment screen opened
+      AnalyticsService.instance.logBeginCheckout(
+        value: (checkoutData!.amounts?.total ?? 0).toDouble(),
+        items: AnalyticsService.itemsFromCart(locator<UserProvider>().cartData),
+        transactionId: checkoutData!.order?.id?.toString(),
+      );
+    }
 
     checkoutData?.paymentChannels?.add(
       PaymentChannels(id: -2, image: AppAssets.accountChargeSvg, type: 'charge', title: appText.accountCharge)
@@ -247,6 +259,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
                               CartService.getCart();
 
                               if(res){
+                                // Event: purchase — account charge payment success
+                                AnalyticsService.instance.logPurchase(
+                                  transactionId: checkoutData!.order!.id.toString(),
+                                  value: (checkoutData!.amounts?.total ?? 0).toDouble(),
+                                  items: AnalyticsService.itemsFromCart(locator<UserProvider>().cartData),
+                                );
+
                                 nextRoute(MainPage.pageName,isClearBackRoutes: true);
                                 showSnackBar(ErrorEnum.success, appText.successfulPaymentDesc);
                               }

@@ -11,6 +11,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../../../../../common/data/app_language.dart';
 import '../../../../../../common/utils/constants.dart';
+import '../../../../../../common/utils/payment_deep_link.dart';
 import '../../../../../../locator.dart';
 
 class WebViewPage extends StatefulWidget {
@@ -224,7 +225,9 @@ class _WebViewPageState extends State<WebViewPage> {
               onLoadStart: (controller, url_) {
 
                 if(url_?.uriValue != null){
-                  if(url_?.uriValue.toString().startsWith(Constants.scheme) ?? false){
+                  final uri = url_!.uriValue!;
+                  if(uri.scheme == Constants.scheme){
+                    handlePaymentDeepLink(uri, navigate: false);
                     backRoute(arguments: true);
                   }
                 }

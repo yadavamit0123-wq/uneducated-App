@@ -1134,7 +1134,13 @@ class SingleCourseWidget{
                           isLoading = true;
                         });
               
-                        bool res = await CartService.store(courseData.id!,selectedTicket!.id!);
+                        bool res = await CartService.store(
+                          courseData.id!,
+                          selectedTicket!.id!,
+                          itemName: courseData.title ?? '',
+                          price: (selectedTicket!.priceWithTicketDiscount ?? courseData.price ?? 0).toDouble(),
+                          category: courseData.type == 'bundle' ? 'bundle' : 'course',
+                        );
                         
                         state((){
                           isLoading = false;
