@@ -1,0 +1,20 @@
+{
+  "buildFiles": [
+    "/Users/john/development/flutter/packages/flutter_tools/gradle/src/main/groovy/CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "/Users/john/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+      "-C",
+      "/Volumes/john_T9/MobileProjects/webinar-app/android/app/.cxx/RelWithDebInfo/1e63t2a4/x86_64",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "/Users/john/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+    "-C",
+    "/Volumes/john_T9/MobileProjects/webinar-app/android/app/.cxx/RelWithDebInfo/1e63t2a4/x86_64",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {}
+}

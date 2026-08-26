@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+  <g id="Group_4704" data-name="Group 4704" transform="translate(-138 -396)">
+    <circle id="Ellipse_609" data-name="Ellipse 609" cx="50" cy="50" r="50" transform="translate(138 396)" fill="#ff4949" opacity="0.3"/>
+    <g id="Iconly_Bulk_Danger" data-name="Iconly/Bulk/Danger" transform="translate(161.001 419.999)">
+      <g id="Group" transform="translate(2 3.001)">
+        <path id="Fill-5" d="M6.808,45.416c-.033,0-.063,0-.1,0A7.069,7.069,0,0,1,.52,35.689l18.3-32.065a7.074,7.074,0,0,1,12.365.023L49.37,35.466a7.179,7.179,0,0,1,.62,2.518,7.073,7.073,0,0,1-6.7,7.43l-36.3,0Z" transform="translate(0 0)" fill="#ff4949" opacity="0.4"/>
+        <path id="Combined-Shape" d="M11.312,21.755a2.194,2.194,0,1,1-2.188,2.2A2.184,2.184,0,0,1,11.312,21.755Zm0-15.61A2.192,2.192,0,0,1,13.5,8.333h0V15.4a2.188,2.188,0,0,1-4.375,0h0V8.333A2.192,2.192,0,0,1,11.312,6.145Z" transform="translate(13.687 9.218)" fill="#ff4949"/>
+      </g>
+    </g>
+  </g>
+</svg>

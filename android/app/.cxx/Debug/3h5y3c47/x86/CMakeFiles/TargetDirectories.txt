@@ -1,0 +1,2 @@
+/Volumes/john_T9/MobileProjects/webinar-app/android/app/.cxx/Debug/3h5y3c47/x86/CMakeFiles/edit_cache.dir
+/Volumes/john_T9/MobileProjects/webinar-app/android/app/.cxx/Debug/3h5y3c47/x86/CMakeFiles/rebuild_cache.dir

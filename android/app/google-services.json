@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "8628130194",
+    "firebase_url": "https://uneducated-2b323-default-rtdb.firebaseio.com",
+    "project_id": "uneducated-2b323",
+    "storage_bucket": "uneducated-2b323.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:8628130194:android:4cea8375b616480a49b14b",
+        "android_client_info": {
+          "package_name": "com.pt.uneducated"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "8628130194-eh7fa1qgq5f4r12b9c9ac4bc6un7m09h.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCcQuhwHUtRdgL6l-ffLjO6ofw5TInqt5o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "8628130194-eh7fa1qgq5f4r12b9c9ac4bc6un7m09h.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
