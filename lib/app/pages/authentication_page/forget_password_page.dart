@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:webinar/app/pages/main_page/home_page/single_course_page/single_content_page/web_view_page.dart';
 import 'package:webinar/app/services/authentication_service/authentication_service.dart';
 import 'package:webinar/app/widgets/authentication_widget/auth_widget.dart';
 import 'package:webinar/app/widgets/authentication_widget/country_code_widget/code_country.dart';
@@ -9,9 +10,11 @@ import 'package:webinar/common/common.dart';
 import 'package:webinar/common/data/api_public_data.dart';
 
 import '../../../common/utils/app_text.dart';
+import '../../../common/utils/constants.dart';
 import '../../../config/assets.dart';
 import '../../../config/colors.dart';
 import '../../../config/styles.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 class ForgetPasswordPage extends StatefulWidget {
   static const String pageName = '/forget-password';
@@ -231,12 +234,18 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                               isSendingData = true;
                             });
                             
-                            bool res = await AuthenticationService.forgetPassword(
+                            Map? res = await AuthenticationService.forgetPassword(
                               isPhoneNumber ? countryCode.dialCode : null,
                               mailController.text.trim(), 
                             );
 
-                            if(res){}
+                            if(res != null && res['token'] != null && !isPhoneNumber){
+                              final resetUrl = '${Constants.dommain}/reset-password/${res['token']}?email=${Uri.encodeComponent(mailController.text.trim())}';
+                              await nextRoute(
+                                WebViewPage.pageName,
+                                arguments: [resetUrl, appText.forgetPassword, false, LoadRequestMethod.get],
+                              );
+                            }
                             
                             setState(() {
                               isSendingData = false;

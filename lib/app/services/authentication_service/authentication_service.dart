@@ -1,12 +1,14 @@
 import 'dart:convert';
 import 'dart:developer';
+
+import 'package:http/http.dart';
+import 'package:webinar/app/models/auth_login_result.dart';
 import 'package:webinar/app/models/register_config_model.dart';
 import 'package:webinar/common/data/app_data.dart';
 import 'package:webinar/common/enums/error_enum.dart';
 import 'package:webinar/common/utils/constants.dart';
 import 'package:webinar/common/utils/error_handler.dart';
 import 'package:webinar/common/utils/http_handler.dart';
-import 'package:http/http.dart';
 
 class AuthenticationService {
   static Future google(String email, String token, String name) async {
@@ -20,7 +22,7 @@ class AuthenticationService {
       });
 
       if (res.statusCode == 200) {
-        await AppData.saveAccessToken(jsonDecode(res.body)['data']['token']);
+        await _saveToken(jsonDecode(res.body)['data']['token']);
         return true;
       } else {
         return false;
@@ -39,7 +41,7 @@ class AuthenticationService {
 
       var jsonResponse = parseCleanJson(res.body.toString());
       if (jsonResponse['success']) {
-        await AppData.saveAccessToken(jsonDecode(res.body)['data']['token']);
+        await _saveToken(jsonResponse['data']['token']);
         return true;
       } else {
         return false;
@@ -48,30 +50,52 @@ class AuthenticationService {
       return false;
     }
   }
-// Helper function
+
   static bool isEmail(String value) {
     return RegExp(r'^[\w.-]+@[\w.-]+\.\w+$').hasMatch(value);
   }
 
-  static Future login(String username, String password) async {
+  static String formatMobileUsername(String dialCode, String mobile) {
+    final code = dialCode.replaceAll('+', '');
+    final digits = mobile.replaceAll(RegExp(r'\D'), '');
+    if (digits.startsWith(code)) {
+      return digits;
+    }
+    return '$code$digits';
+  }
+
+  static Future<AuthLoginResult> login(String username, String password) async {
     try {
       String url = '${Constants.baseUrl}login';
 
-      Response res = await httpPost(url, {'username': isEmail(username) ? username : "+$username", 'password': password});
+      final loginUsername =
+          isEmail(username) ? username : username.replaceAll(RegExp(r'\D'), '');
+
+      Response res = await httpPost(url, {
+        'username': loginUsername,
+        'password': password,
+      });
 
       var jsonResponse = parseCleanJson(res.body.toString());
       log(jsonResponse.toString());
 
-      if (jsonResponse['success']) {
-        await AppData.saveAccessToken(jsonResponse['data']['token']);
+      if (_hasLoginToken(jsonResponse)) {
+        await _saveToken(jsonResponse['data']['token']);
         await AppData.saveName('');
-        return true;
-      } else {
-        ErrorHandler().showError(ErrorEnum.error, jsonResponse, readMessage: true);
-        return false;
+        return AuthLoginResult.loggedIn();
       }
+
+      if (jsonResponse['status'] == 'not_verified') {
+        return AuthLoginResult.notVerified(
+          username: loginUsername,
+          isEmail: isEmail(username),
+        );
+      }
+
+      ErrorHandler().showError(ErrorEnum.error, jsonResponse, readMessage: true);
+      return AuthLoginResult.failed();
     } catch (e) {
-      return false;
+      return AuthLoginResult.failed();
     }
   }
 
@@ -86,11 +110,11 @@ class AuthenticationService {
       String url = '${Constants.baseUrl}register/step/1';
 
       Map body = {
-        "register_method": registerMethod,
-        "country_code": null,
+        'register_method': registerMethod,
+        'country_code': null,
         'email': email,
         'password': password,
-        'password_confirmation': repeatPassword
+        'password_confirmation': repeatPassword,
       };
 
       if (fields != null) {
@@ -109,19 +133,15 @@ class AuthenticationService {
 
         body.addEntries({'fields': bodyFields.toString()}.entries);
       }
-      print(body);
 
       Response res = await httpPost(url, body);
 
       var jsonResponse = parseCleanJson(res.body.toString());
-      print(jsonResponse);
 
-      if (jsonResponse['success'] ||
-          jsonResponse['status'] == 'go_step_2' ||
-          jsonResponse['status'] == 'go_step_3') {
+      if (_isRegisterStep1Success(jsonResponse)) {
         return {
           'user_id': jsonResponse['data']['user_id'],
-          'step': jsonResponse['status']
+          'step': jsonResponse['status'],
         };
       } else {
         ErrorHandler().showError(ErrorEnum.error, jsonResponse);
@@ -133,7 +153,6 @@ class AuthenticationService {
   }
 
   static Future<Map?> registerWithPhone(
-      String registerMethod,
       String countryCode,
       String mobile,
       String password,
@@ -144,13 +163,11 @@ class AuthenticationService {
       String url = '${Constants.baseUrl}register/step/1';
 
       Map body = {
-        "register_method": registerMethod,
-        "country_code": countryCode,
         'mobile': mobile,
+        'country_code': countryCode,
         'password': password,
         'password_confirmation': repeatPassword,
       };
-      print(body);
 
       if (fields != null) {
         Map bodyFields = {};
@@ -171,17 +188,11 @@ class AuthenticationService {
 
       Response res = await httpPost(url, body);
 
-      print(res.body);
-
       var jsonResponse = parseCleanJson(res.body.toString());
-      if (jsonResponse['success'] ||
-          jsonResponse['status'] == 'go_step_2' ||
-          jsonResponse['status'] == 'go_step_3') {
-        // || stored
-
+      if (_isRegisterStep1Success(jsonResponse)) {
         return {
           'user_id': jsonResponse['data']['user_id'],
-          'step': jsonResponse['status']
+          'step': jsonResponse['status'],
         };
       } else {
         ErrorHandler().showError(ErrorEnum.error, jsonResponse);
@@ -192,17 +203,17 @@ class AuthenticationService {
     }
   }
 
-  static Future<bool> forgetPassword(String? countryCode, String data) async {
+  static Future<Map?> forgetPassword(String? countryCode, String data) async {
     try {
       String url = '${Constants.baseUrl}forget-password';
 
       Response res = await httpPost(url, {
         'type': countryCode == null ? 'email' : 'mobile',
         if (countryCode == null) ...{
-          "email": data
+          'email': data,
         } else ...{
-          "country_code": countryCode,
-          "mobile": data,
+          'country_code': countryCode,
+          'mobile': data,
         }
       });
 
@@ -212,29 +223,81 @@ class AuthenticationService {
       if (jsonResponse['success']) {
         ErrorHandler()
             .showError(ErrorEnum.success, jsonResponse, readMessage: true);
-        return true;
+
+        if (countryCode == null && jsonResponse['data']?['token'] != null) {
+          return {
+            'email': data,
+            'token': jsonResponse['data']['token'].toString(),
+          };
+        }
+
+        return {'success': true};
       } else {
         ErrorHandler().showError(ErrorEnum.error, jsonResponse);
-        return false;
+        return null;
       }
     } catch (e) {
-      return false;
+      return null;
     }
   }
 
-  static Future<bool> verifyCode(int userId, String code) async {
+  /// Register OTP — POST /register/step/2. Saves token on status "verified".
+  static Future<AuthVerifyResult> verifyRegisterCode(
+      int userId, String code) async {
     try {
       String url = '${Constants.baseUrl}register/step/2';
 
       Response res = await httpPost(url, {
-        "user_id": userId.toString(),
-        "code": code,
+        'user_id': userId.toString(),
+        'code': code,
       });
 
       log(res.body.toString());
 
       var jsonResponse = parseCleanJson(res.body.toString());
-      if (jsonResponse['success']) {
+      if (_isVerifiedResponse(jsonResponse)) {
+        await _saveTokenIfPresent(jsonResponse);
+        return AuthVerifyResult(
+          success: true,
+          userId: jsonResponse['data']?['user_id'] ?? userId,
+        );
+      } else {
+        ErrorHandler().showError(ErrorEnum.error, jsonResponse);
+        return const AuthVerifyResult(success: false);
+      }
+    } catch (e) {
+      return const AuthVerifyResult(success: false);
+    }
+  }
+
+  /// Login OTP — POST /verification. Saves token on status "verified".
+  static Future<bool> verifyOtp({
+    required String username,
+    required String code,
+    required bool isEmail,
+  }) async {
+    try {
+      String url = '${Constants.baseUrl}verification';
+
+      final body = isEmail
+          ? {
+              'username': username,
+              'email': username,
+              'code': code,
+            }
+          : {
+              'username': username,
+              'mobile': username,
+              'code': code,
+            };
+
+      Response res = await httpPost(url, body);
+
+      log(res.body.toString());
+
+      var jsonResponse = parseCleanJson(res.body.toString());
+      if (_isVerifiedResponse(jsonResponse)) {
+        await _saveTokenIfPresent(jsonResponse);
         return true;
       } else {
         ErrorHandler().showError(ErrorEnum.error, jsonResponse);
@@ -251,14 +314,14 @@ class AuthenticationService {
       String url = '${Constants.baseUrl}register/step/3';
 
       Response res = await httpPost(url, {
-        "user_id": userId.toString(),
-        "full_name": name,
-        "referral_code": referralCode
+        'user_id': userId.toString(),
+        'full_name': name,
+        'referral_code': referralCode,
       });
 
       var jsonResponse = parseCleanJson(res.body.toString());
-      if (jsonResponse['success']) {
-        await AppData.saveAccessToken(jsonResponse['data']['token']);
+      if (_hasLoginToken(jsonResponse)) {
+        await _saveToken(jsonResponse['data']['token']);
         await AppData.saveName(name);
         return true;
       } else {
@@ -269,10 +332,39 @@ class AuthenticationService {
       return false;
     }
   }
+
+  static bool _isRegisterStep1Success(Map<String, dynamic> jsonResponse) {
+    return jsonResponse['success'] == true ||
+        jsonResponse['status'] == 'stored' ||
+        jsonResponse['status'] == 'go_step_2' ||
+        jsonResponse['status'] == 'go_step_3';
+  }
+
+  static bool _hasLoginToken(Map<String, dynamic> jsonResponse) {
+    return jsonResponse['status'] == 'login' ||
+        (jsonResponse['success'] == true &&
+            jsonResponse['data']?['token'] != null);
+  }
+
+  static bool _isVerifiedResponse(Map<String, dynamic> jsonResponse) {
+    return jsonResponse['status'] == 'verified' ||
+        jsonResponse['success'] == true;
+  }
+
+  static Future<void> _saveTokenIfPresent(
+      Map<String, dynamic> jsonResponse) async {
+    final token = jsonResponse['data']?['token'];
+    if (token != null && token.toString().isNotEmpty) {
+      await _saveToken(token.toString());
+    }
+  }
+
+  static Future<void> _saveToken(String token) async {
+    await AppData.saveAccessToken(token);
+  }
 }
 
 Map<String, dynamic> parseCleanJson(String response) {
-// Find first JSON object start
   final int jsonStart = response.indexOf('{');
 
   if (jsonStart == -1) {

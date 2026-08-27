@@ -76,7 +76,7 @@ class GuestService{
 
       var jsonResponse = parseCleanJson(res.body.toString());
 
-      if(res.statusCode == 200){
+      if(res.statusCode == 200 && jsonResponse['success'] == true){
         
         PublicData.apiConfigData = jsonResponse['data'];
 

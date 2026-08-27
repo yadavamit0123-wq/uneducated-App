@@ -430,7 +430,10 @@ class _RegisterPageState extends State<RegisterPage> {
       
                                   
                                   if(res != null){
-                                    if(registerConfig?.disableRegistrationVerification ?? false){
+                                    final skipVerification = registerConfig?.disableRegistrationVerification == true ||
+                                        PublicData.apiConfigData?['disable_registration_verification'] == true;
+
+                                    if(skipVerification){
                                       // Event: sign_up — registration complete without verification
                                       AnalyticsService.instance.logSignUp(
                                         method: otherRegisterMethod == 'email' ? 'email' : 'mobile',
@@ -441,6 +444,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
                                       if(res['step'] == 'stored' || res['step'] == 'go_step_2'){
                                         nextRoute(VerifyCodePage.pageName, arguments: {
+                                          'flow': 'register',
                                           'user_id' : res['user_id'],
                                           'email': mailController.text.trim(),
                                           'password': passwordController.text.trim(),
@@ -462,9 +466,7 @@ class _RegisterPageState extends State<RegisterPage> {
       
                                 }else{
       
-                                  Map? res = await AuthenticationService.registerWithPhone( // mobile
-                                    // registerConfig?.registerMethod ?? '',
-                                    otherRegisterMethod!,
+                                  Map? res = await AuthenticationService.registerWithPhone(
                                     countryCode.dialCode.toString(),
                                     phoneController.text.trim(), 
                                     passwordController.text.trim(), 
@@ -474,7 +476,10 @@ class _RegisterPageState extends State<RegisterPage> {
                                   );
                                   
                                   if(res != null){
-                                    if(registerConfig?.disableRegistrationVerification ?? false){
+                                    final skipVerification = registerConfig?.disableRegistrationVerification == true ||
+                                        PublicData.apiConfigData?['disable_registration_verification'] == true;
+
+                                    if(skipVerification){
                                       // Event: sign_up — registration complete without verification
                                       AnalyticsService.instance.logSignUp(
                                         method: otherRegisterMethod == 'email' ? 'email' : 'mobile',
@@ -485,6 +490,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                       if(res['step'] == 'stored' || res['step'] == 'go_step_2'){
                                       
                                         nextRoute(VerifyCodePage.pageName, arguments: {
+                                          'flow': 'register',
                                           'user_id' : res['user_id'],
                                           'countryCode': countryCode.dialCode.toString(),
                                           'phone': phoneController.text.trim(),

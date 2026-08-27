@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 class Constants {
   
   
-  // static const dommain = 'https://uneducated.co.in';
-  static const dommain = 'https://rocket.visticsolutions.com';
+  static const dommain = 'https://uneducated.co.in';
   static const baseUrl = '$dommain/api/development/';
+  // Set from Admin → Mobile App settings
   static const apiKey = '123456';
   static const scheme = 'academyapp';
   

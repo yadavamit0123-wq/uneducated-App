@@ -47,102 +47,50 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
   bool isSendingData = false;
   bool isCodeAgain = false;
 
-  late Map data;
+  late Map data = {};
+
+  bool get _isLoginFlow => data['flow'] == 'login';
+  bool get _hasData => data.isNotEmpty;
 
   @override
   void initState() {
     super.initState();
     
-    controller1.addListener(() {
-      if(getCode().length == 5){
-        if(isEmptyInputs){
-          setState(() {
-            isEmptyInputs = false;
-          });
-        }
-      }else{
-        if(!isEmptyInputs){
-          setState(() {
-            isEmptyInputs = true;
-          });
-        }
-      }
-    });
-    
-    controller2.addListener(() {
-      if(getCode().length == 5){
-        if(isEmptyInputs){
-          setState(() {
-            isEmptyInputs = false;
-          });
-        }
-      }else{
-        if(!isEmptyInputs){
-          setState(() {
-            isEmptyInputs = true;
-          });
-        }
-      }
-    });
-
-    controller3.addListener(() {
-      if(getCode().length == 5){
-        if(isEmptyInputs){
-          setState(() {
-            isEmptyInputs = false;
-          });
-        }
-      }else{
-        if(!isEmptyInputs){
-          setState(() {
-            isEmptyInputs = true;
-          });
-        }
-      }
-    });
-
-    controller4.addListener(() {
-      if(getCode().length == 5){
-        if(isEmptyInputs){
-          setState(() {
-            isEmptyInputs = false;
-          });
-        }
-      }else{
-        if(!isEmptyInputs){
-          setState(() {
-            isEmptyInputs = true;
-          });
-        }
-      }
-    });
-
-    controller5.addListener(() {
-      if(getCode().length == 5){
-        if(isEmptyInputs){
-          setState(() {
-            isEmptyInputs = false;
-          });
-        }
-      }else{
-        if(!isEmptyInputs){
-          setState(() {
-            isEmptyInputs = true;
-          });
-        }
-      }
-    });
-
+    for (final controller in [
+      controller1,
+      controller2,
+      controller3,
+      controller4,
+      controller5,
+    ]) {
+      controller.addListener(_updateEmptyState);
+    }
 
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       data = ModalRoute.of(context)!.settings.arguments as Map;
+      setState(() {});
     });
+  }
 
-
+  void _updateEmptyState() {
+    final filled = getCode().length == 5;
+    if (filled == !isEmptyInputs) {
+      setState(() {
+        isEmptyInputs = !filled;
+      });
+    }
   }
 
   String getCode(){
     return controller1.text.trim() + controller2.text.trim() + controller3.text.trim() + controller4.text.trim() + controller5.text.trim();
+  }
+
+  void _clearCodeFields() {
+    controller1.clear();
+    controller2.clear();
+    controller3.clear();
+    controller4.clear();
+    controller5.clear();
   }
 
   onPastedCode(String code){
@@ -154,10 +102,43 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
     controller5.text = items[4];
     FocusScope.of(navigatorKey.currentContext!).unfocus();
   }
+
+  Future<void> _onVerifySuccess({int? userId}) async {
+    if (!_isLoginFlow) {
+      AnalyticsService.instance.logSignUp(
+        method: PublicData.apiConfigData?['register_method'] == 'email'
+            ? 'email'
+            : 'mobile',
+      );
+    }
+
+    if (Platform.isAndroid) {
+      try {
+        await FirebaseMessaging.instance.deleteToken();
+      } catch (_) {}
+    }
+
+    if (_isLoginFlow) {
+      locator<PageProvider>().setPage(PageNames.home);
+      nextRoute(MainPage.pageName, isClearBackRoutes: true);
+      return;
+    }
+
+    AppData.canShowFinalizeSheet = true;
+    locator<PageProvider>().setPage(PageNames.home);
+    nextRoute(
+      MainPage.pageName,
+      isClearBackRoutes: true,
+      arguments: userId ?? data['user_id'],
+    );
+  }
   
   @override
   Widget build(BuildContext context) {
-    
+    if (!_hasData) {
+      return directionality(child: Scaffold(body: loading()));
+    }
+
     return directionality(
       child: Scaffold(
         body: Stack(
@@ -183,7 +164,6 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
               
                     space(getSize().height * .11),
               
-                    // title
                     Row(
                       children: [
               
@@ -198,14 +178,12 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
                       ],
                     ),
               
-                    // desc
                     Text(
                       appText.accountVerificationDesc,
                       style: style14Regular().copyWith(color: greyA5),
                     ),
               
                     const Spacer(),
-              
               
                     Directionality(
                       textDirection: TextDirection.ltr,
@@ -237,36 +215,39 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
 
                     const Spacer(),
 
-
                     Center(
                       child: button(
                         onTap: () async {
                     
                           if(!isEmptyInputs){
-                            String code = controller1.text + controller2.text + controller3.text + controller4.text + controller5.text;
+                            String code = getCode();
                           
                             if(code.length == 5){
                               setState(() {
                                 isSendingData = true;
                               });
-                            
-                              bool res = await AuthenticationService.verifyCode(data['user_id'], code);
-                    
-                              if(res){
-                                // Event: sign_up — account verification complete
-                                AnalyticsService.instance.logSignUp(
-                                  method: PublicData.apiConfigData?['register_method'] == 'email'
-                                      ? 'email'
-                                      : 'mobile',
+
+                              if (_isLoginFlow) {
+                                // Login OTP — POST /verification, token saved in service
+                                final verified = await AuthenticationService.verifyOtp(
+                                  username: data['username'],
+                                  code: code,
+                                  isEmail: data['isEmail'] == true,
                                 );
 
-                                if(Platform.isAndroid){
-                                  await FirebaseMessaging.instance.deleteToken();
+                                if (verified) {
+                                  await _onVerifySuccess();
                                 }
-                                
-                                AppData.canShowFinalizeSheet = true;
-                                locator<PageProvider>().setPage(PageNames.home);
-                                nextRoute(MainPage.pageName, isClearBackRoutes: true, arguments: data['user_id']);
+                              } else {
+                                // Register OTP — POST /register/step/2, token saved in service
+                                final result = await AuthenticationService.verifyRegisterCode(
+                                  data['user_id'],
+                                  code,
+                                );
+
+                                if (result.success) {
+                                  await _onVerifySuccess(userId: result.userId);
+                                }
                               }
                               
                               setState(() {
@@ -300,62 +281,48 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
                     ? loading()
                     : GestureDetector(
                         onTap: () async {
+                          setState(() {
+                            isCodeAgain = true;
+                          });
 
-                          if(PublicData.apiConfigData['register_method'] == 'email'){
-
-                            setState(() {
-                              isCodeAgain = true;
-                            });
-
-                            Map? res = await AuthenticationService.registerWithEmail( // email
+                          if (_isLoginFlow) {
+                            // Re-trigger login so backend resends OTP
+                            await AuthenticationService.login(
+                              data['username'],
+                              data['password'],
+                            );
+                            _clearCodeFields();
+                          } else if (PublicData.apiConfigData?['register_method'] == 'email') {
+                            Map? res = await AuthenticationService.registerWithEmail(
                               PublicData.apiConfigData?['register_method'],
                               data['email'], 
                               data['password'], 
                               data['retypePassword'],
                               'user',
-                              []
+                              [],
                             );
 
-                            if(res != null){
-                              controller1.clear();
-                              controller2.clear();
-                              controller3.clear();
-                              controller4.clear();
-                              controller5.clear();
+                            if (res != null) {
+                              _clearCodeFields();
                             }
-                            
-                            setState(() {
-                              isCodeAgain = false;
-                            });
-                            
-                          }else{
-                            
-                            setState(() {
-                              isCodeAgain = true;
-                            });
-
-                            Map? res = await AuthenticationService.registerWithPhone( // mobile
-                              PublicData.apiConfigData?['register_method'],
+                          } else {
+                            Map? res = await AuthenticationService.registerWithPhone(
                               data['countryCode'], 
                               data['phone'], 
                               data['password'],
                               data['retypePassword'],
                               'user',
-                              []
+                              [],
                             );
                             
-                            if(res != null){
-                              controller1.clear();
-                              controller2.clear();
-                              controller3.clear();
-                              controller4.clear();
-                              controller5.clear();
+                            if (res != null) {
+                              _clearCodeFields();
                             }
-                            
-                            setState(() {
-                              isCodeAgain = false;
-                            });
                           }
+                            
+                          setState(() {
+                            isCodeAgain = false;
+                          });
                         },
                         behavior: HitTestBehavior.opaque,
                         child: Text(

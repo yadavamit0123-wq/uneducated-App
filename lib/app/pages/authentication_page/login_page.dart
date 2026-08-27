@@ -7,6 +7,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:webinar/app/pages/authentication_page/forget_password_page.dart';
 import 'package:webinar/app/pages/authentication_page/register_page.dart';
+import 'package:webinar/app/pages/authentication_page/verify_code_page.dart';
 import 'package:webinar/app/pages/main_page/home_page/single_course_page/single_content_page/web_view_page.dart';
 import 'package:webinar/app/pages/main_page/main_page.dart';
 import 'package:webinar/app/providers/page_provider.dart';
@@ -363,13 +364,20 @@ class _LoginPageState extends State<LoginPage> {
                               setState(() {
                                 isSendingData=true;
                               });
+
+                              final username = isPhoneNumber
+                                  ? AuthenticationService.formatMobileUsername(
+                                      countryCode.dialCode!,
+                                      mailController.text.trim(),
+                                    )
+                                  : mailController.text.trim();
                               
-                              bool res = await AuthenticationService.login(
-                                '${isPhoneNumber ? countryCode.dialCode!.replaceAll('+', '') : ''}${mailController.text.trim()}', 
-                                passwordController.text.trim()
+                              final result = await AuthenticationService.login(
+                                username,
+                                passwordController.text.trim(),
                               );
       
-                              if(res){
+                              if(result.isLoggedIn){
                                 
                                 if(Platform.isAndroid){ // for ios, firebase not configured
                                   try{
@@ -379,6 +387,14 @@ class _LoginPageState extends State<LoginPage> {
 
                                 locator<PageProvider>().setPage(PageNames.home);
                                 nextRoute(MainPage.pageName,isClearBackRoutes: true);
+                              } else if(result.needsVerification && result.username != null){
+                                // Unverified user — OTP already sent by backend
+                                nextRoute(VerifyCodePage.pageName, arguments: {
+                                  'flow': 'login',
+                                  'username': result.username,
+                                  'isEmail': result.isEmail,
+                                  'password': passwordController.text.trim(),
+                                });
                               }
                               
                               setState(() {
