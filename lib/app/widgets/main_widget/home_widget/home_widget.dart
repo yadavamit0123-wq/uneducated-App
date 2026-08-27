@@ -310,9 +310,8 @@ class HomeWidget{
                                   });
                                   
                                   bool res = await AuthenticationService.registerStep3(
-                                    userId, 
                                     nameController.text.trim(), 
-                                    referralController.text.trim()
+                                    referralCode: referralController.text.trim(),
                                   );
             
                                   if(res){

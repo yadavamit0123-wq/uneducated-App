@@ -228,11 +228,10 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
                               });
 
                               if (_isLoginFlow) {
-                                // Login OTP — POST /verification, token saved in service
+                                // Login OTP — POST /verification
                                 final verified = await AuthenticationService.verifyOtp(
                                   username: data['username'],
                                   code: code,
-                                  isEmail: data['isEmail'] == true,
                                 );
 
                                 if (verified) {
@@ -286,38 +285,15 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
                           });
 
                           if (_isLoginFlow) {
-                            // Re-trigger login so backend resends OTP
-                            await AuthenticationService.login(
-                              data['username'],
-                              data['password'],
+                            await AuthenticationService.resendOtp(
+                              username: data['username'],
                             );
                             _clearCodeFields();
-                          } else if (PublicData.apiConfigData?['register_method'] == 'email') {
-                            Map? res = await AuthenticationService.registerWithEmail(
-                              PublicData.apiConfigData?['register_method'],
-                              data['email'], 
-                              data['password'], 
-                              data['retypePassword'],
-                              'user',
-                              [],
-                            );
-
-                            if (res != null) {
-                              _clearCodeFields();
-                            }
                           } else {
-                            Map? res = await AuthenticationService.registerWithPhone(
-                              data['countryCode'], 
-                              data['phone'], 
-                              data['password'],
-                              data['retypePassword'],
-                              'user',
-                              [],
+                            await AuthenticationService.resendOtp(
+                              userId: data['user_id'],
                             );
-                            
-                            if (res != null) {
-                              _clearCodeFields();
-                            }
+                            _clearCodeFields();
                           }
                             
                           setState(() {

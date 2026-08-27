@@ -392,8 +392,6 @@ class _LoginPageState extends State<LoginPage> {
                                 nextRoute(VerifyCodePage.pageName, arguments: {
                                   'flow': 'login',
                                   'username': result.username,
-                                  'isEmail': result.isEmail,
-                                  'password': passwordController.text.trim(),
                                 });
                               }
                               

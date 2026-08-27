@@ -68,8 +68,9 @@ class AuthenticationService {
     try {
       String url = '${Constants.baseUrl}login';
 
-      final loginUsername =
-          isEmail(username) ? username : username.replaceAll(RegExp(r'\D'), '');
+      final loginUsername = isEmail(username)
+          ? username
+          : username.replaceAll(RegExp(r'\D'), '');
 
       Response res = await httpPost(url, {
         'username': loginUsername,
@@ -212,7 +213,7 @@ class AuthenticationService {
         if (countryCode == null) ...{
           'email': data,
         } else ...{
-          'country_code': countryCode,
+          'country_code': countryCode.startsWith('+') ? countryCode : '+$countryCode',
           'mobile': data,
         }
       });
@@ -270,28 +271,20 @@ class AuthenticationService {
     }
   }
 
-  /// Login OTP — POST /verification. Saves token on status "verified".
+  /// Login OTP — POST /verification {username, code}. Saves data.token.
   static Future<bool> verifyOtp({
     required String username,
     required String code,
-    required bool isEmail,
   }) async {
     try {
       String url = '${Constants.baseUrl}verification';
 
-      final body = isEmail
-          ? {
-              'username': username,
-              'email': username,
-              'code': code,
-            }
-          : {
-              'username': username,
-              'mobile': username,
-              'code': code,
-            };
-
-      Response res = await httpPost(url, body);
+      Response res = await httpPost(url, {
+        'username': isEmail(username)
+            ? username
+            : username.replaceAll(RegExp(r'\D'), ''),
+        'code': code,
+      });
 
       log(res.body.toString());
 
@@ -308,20 +301,84 @@ class AuthenticationService {
     }
   }
 
-  static Future<bool> registerStep3(
-      int userId, String name, String referralCode) async {
+  /// Resend OTP — POST /verification/resend {username OR user_id}
+  static Future<bool> resendOtp({String? username, int? userId}) async {
     try {
-      String url = '${Constants.baseUrl}register/step/3';
+      String url = '${Constants.baseUrl}verification/resend';
+
+      final Map<String, String> body = {};
+      if (username != null && username.isNotEmpty) {
+        body['username'] = isEmail(username)
+            ? username
+            : username.replaceAll(RegExp(r'\D'), '');
+      } else if (userId != null) {
+        body['user_id'] = userId.toString();
+      } else {
+        return false;
+      }
+
+      Response res = await httpPost(url, body);
+      var jsonResponse = parseCleanJson(res.body.toString());
+
+      if (jsonResponse['success'] == true) {
+        ErrorHandler()
+            .showError(ErrorEnum.success, jsonResponse, readMessage: true);
+        return true;
+      } else {
+        ErrorHandler().showError(ErrorEnum.error, jsonResponse);
+        return false;
+      }
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Email reset — POST /reset-password/{token}
+  static Future<bool> resetPasswordEmail({
+    required String token,
+    required String email,
+    required String password,
+    required String passwordConfirmation,
+  }) async {
+    try {
+      String url = '${Constants.baseUrl}reset-password/$token';
 
       Response res = await httpPost(url, {
-        'user_id': userId.toString(),
-        'full_name': name,
-        'referral_code': referralCode,
+        'email': email,
+        'password': password,
+        'password_confirmation': passwordConfirmation,
       });
 
       var jsonResponse = parseCleanJson(res.body.toString());
-      if (_hasLoginToken(jsonResponse)) {
-        await _saveToken(jsonResponse['data']['token']);
+      if (jsonResponse['success'] == true) {
+        ErrorHandler()
+            .showError(ErrorEnum.success, jsonResponse, readMessage: true);
+        return true;
+      } else {
+        ErrorHandler().showError(ErrorEnum.error, jsonResponse);
+        return false;
+      }
+    } catch (e) {
+      return false;
+    }
+  }
+
+  static Future<bool> registerStep3(String name, {String referralCode = ''}) async {
+    try {
+      String url = '${Constants.baseUrl}register/step/3';
+
+      Response res = await httpPostWithToken(
+        url,
+        {
+          'full_name': name,
+          if (referralCode.isNotEmpty) 'referral_code': referralCode,
+        },
+        isRedirectingStatusCode: false,
+      );
+
+      var jsonResponse = parseCleanJson(res.body.toString());
+      if (jsonResponse['success'] == true || _hasLoginToken(jsonResponse)) {
+        await _saveTokenIfPresent(jsonResponse);
         await AppData.saveName(name);
         return true;
       } else {
