@@ -19,8 +19,8 @@ subprojects {
 }
 
 subprojects {
-    afterEvaluate {
-        extensions.findByType(LibraryExtension::class.java)?.apply {
+    pluginManager.withPlugin("com.android.library") {
+        extensions.configure<LibraryExtension>("android") {
             compileSdk = 36
         }
     }
