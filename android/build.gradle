@@ -1,0 +1,43 @@
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.buildDir = '../build'
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+}
+
+subprojects { subproject ->
+    def configureAndroid = {
+        if (subproject.name == 'app') {
+            return
+        }
+        if (subproject.plugins.hasPlugin('com.android.library')) {
+            subproject.android {
+                compileSdkVersion 36
+                compileOptions {
+                    sourceCompatibility JavaVersion.VERSION_17
+                    targetCompatibility JavaVersion.VERSION_17
+                }
+            }
+            subproject.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+                kotlinOptions {
+                    jvmTarget = '17'
+                }
+            }
+        }
+    }
+
+    if (subproject.state.executed) {
+        configureAndroid()
+    } else {
+        subproject.afterEvaluate configureAndroid
+    }
+}
+
+tasks.register('clean', Delete) {
+    delete rootProject.buildDir
+}
