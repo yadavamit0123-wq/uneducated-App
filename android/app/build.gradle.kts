@@ -27,7 +27,7 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace = "com.pt.uneducated"
     compileSdk = 36
-    ndkVersion = "29.0.13113456 rc1"
+    ndkVersion = "28.2.13676358"
 
     defaultConfig {
         applicationId = "com.pt.uneducated"
@@ -58,12 +58,12 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "17"
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
         isCoreLibraryDesugaringEnabled = true
     }
 
@@ -74,7 +74,7 @@ flutter {
     source = "../.."
 }
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.0")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.4.0")
     implementation("com.facebook.android:facebook-android-sdk:[8,9)")
     implementation(platform("com.google.firebase:firebase-bom:33.13.0"))
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.2")
