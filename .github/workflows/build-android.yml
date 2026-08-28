@@ -44,7 +44,7 @@ jobs:
             echo "Missing secret: ANDROID_KEYSTORE_BASE64"
             exit 1
           fi
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/prt.jks
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/prt.jks
 
       - name: Create key.properties
         env:
