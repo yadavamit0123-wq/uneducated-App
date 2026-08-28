@@ -1,6 +1,5 @@
 import java.util.Properties
 import java.io.FileInputStream
-import com.android.build.api.dsl.ApplicationExtension
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -25,7 +24,7 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
-configure<ApplicationExtension> {
+android {
     namespace = "com.pt.uneducated"
     compileSdk = 36
     ndkVersion = "28.2.13676358"

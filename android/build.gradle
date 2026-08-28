@@ -5,39 +5,18 @@ allprojects {
     }
 }
 
-rootProject.buildDir = '../build'
+def newBuildDir = rootProject.layout.buildDirectory.dir("../../build").get()
+rootProject.layout.buildDirectory.value(newBuildDir)
+
 subprojects {
-    project.buildDir = "${rootProject.buildDir}/${project.name}"
+    def newSubprojectBuildDir = newBuildDir.dir(project.name)
+    project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
 
-subprojects { subproject ->
-    def configureAndroid = {
-        if (subproject.name == 'app') {
-            return
-        }
-        if (subproject.plugins.hasPlugin('com.android.library')) {
-            subproject.android {
-                compileSdkVersion 36
-                compileOptions {
-                    sourceCompatibility JavaVersion.VERSION_17
-                    targetCompatibility JavaVersion.VERSION_17
-                }
-            }
-            subproject.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-                kotlinOptions {
-                    jvmTarget = '17'
-                }
-            }
-        }
-    }
-
-    if (subproject.state.executed) {
-        configureAndroid()
-    } else {
-        subproject.afterEvaluate configureAndroid
-    }
+subprojects {
+    project.evaluationDependsOn(":app")
 }
 
-tasks.register('clean', Delete) {
-    delete rootProject.buildDir
+tasks.register("clean", Delete) {
+    delete rootProject.layout.buildDirectory
 }
