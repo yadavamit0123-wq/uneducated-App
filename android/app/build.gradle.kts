@@ -1,6 +1,7 @@
 import java.util.Properties
 import java.io.FileInputStream
-
+import com.android.build.api.dsl.ApplicationExtension
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id("com.android.application")
@@ -24,7 +25,7 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
-android {
+configure<ApplicationExtension> {
     namespace = "com.pt.uneducated"
     compileSdk = 36
     ndkVersion = "28.2.13676358"
@@ -37,7 +38,6 @@ android {
         versionName = "1.0.2"
     }
 
-
     signingConfigs {
         if (keystorePropertiesFile.exists()) {
             create("release") {
@@ -48,7 +48,7 @@ android {
             }
         }
     }
-    
+
     buildTypes {
         release {
             if (keystorePropertiesFile.exists()) {
@@ -57,17 +57,23 @@ android {
         }
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
         isCoreLibraryDesugaringEnabled = true
     }
 
-    sourceSets["main"].java.srcDirs("src/main/kotlin")
+    sourceSets {
+        getByName("main") {
+            java.srcDirs("src/main/kotlin")
+        }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
+    }
 }
 
 flutter {
